@@ -1,5 +1,6 @@
 import AppKit
 import Defaults
+import KeyboardShortcuts
 
 struct StorageType {
   static let files = StorageType(types: [.fileURL])
@@ -10,7 +11,41 @@ struct StorageType {
   var types: [NSPasteboard.PasteboardType]
 }
 
+enum ActivationShortcut: Codable, Defaults.Serializable {
+  case standard(KeyboardShortcuts.Shortcut)
+  case doubleTap(UInt)
+  case chord(UInt)
+  
+  var description: String {
+    switch self {
+    case .standard(let shortcut):
+      // shortcut.description is @MainActor, so we use a custom formatter for recording
+      return "Shortcut" 
+    case .doubleTap(let raw):
+      let flags = NSEvent.ModifierFlags(rawValue: raw)
+      return "Double \(flags.humanReadableDescription)"
+    case .chord(let raw):
+      let flags = NSEvent.ModifierFlags(rawValue: raw)
+      return flags.humanReadableDescription
+    }
+  }
+}
+
+extension NSEvent.ModifierFlags {
+  var humanReadableDescription: String {
+    var components: [String] = []
+    if contains(.control) { components.append("⌃") }
+    if contains(.option) { components.append("⌥") }
+    if contains(.shift) { components.append("⇧") }
+    if contains(.command) { components.append("⌘") }
+    return components.joined()
+  }
+}
+
 extension Defaults.Keys {
+  static let activationShortcut = Key<ActivationShortcut?>("activationShortcut", default: nil)
+  static let pinShortcut = Key<ActivationShortcut?>("pinShortcut", default: nil)
+  static let deleteShortcut = Key<ActivationShortcut?>("deleteShortcut", default: nil)
   static let clearOnQuit = Key<Bool>("clearOnQuit", default: false)
   static let clearSystemClipboard = Key<Bool>("clearSystemClipboard", default: false)
   static let clipboardCheckInterval = Key<Double>("clipboardCheckInterval", default: 0.5)
@@ -40,7 +75,7 @@ extension Defaults.Keys {
   static let numberOfUsages = Key<Int>("numberOfUsages", default: 0)
   static let pasteByDefault = Key<Bool>("pasteByDefault", default: false)
   static let pinTo = Key<PinsPosition>("pinTo", default: .top)
-  static let popupPosition = Key<PopupPosition>("popupPosition", default: .cursor)
+  static let popupPosition = Key<PopupPosition>("popupPosition", default: .bottom)
   static let popupScreen = Key<Int>("popupScreen", default: 0)
   static let previewDelay = Key<Int>("previewDelay", default: 1500)
   static let removeFormattingByDefault = Key<Bool>("removeFormattingByDefault", default: false)

@@ -14,21 +14,19 @@ struct HistoryItemView: View {
       accessoryImage: item.thumbnailImage != nil ? nil : ColorImage.from(item.title),
       attributedTitle: item.attributedTitle,
       shortcuts: item.shortcuts,
-      isSelected: item.isSelected
+      isSelected: item.isSelected,
+      timeLabel: item.timeAgo,
+      typeLabel: item.contentTypeLabel,
+      appName: item.application,
+      statsLabel: item.statsLabel
     ) {
-      Text(verbatim: item.title)
+      Text(verbatim: item.text)
     }
     .onAppear {
       item.ensureThumbnailImage()
     }
     .onTapGesture {
       appState.history.select(item)
-    }
-    .popover(isPresented: $item.showPreview, arrowEdge: .trailing) {
-      PreviewItemView(item: item)
-        .onAppear {
-          item.ensurePreviewImage()
-        }
     }
   }
 }

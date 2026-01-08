@@ -92,6 +92,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     migrateUserDefaults()
     disableUnusedGlobalHotkeys()
 
+    // Force bottom position for this specialized UI if not already set.
+    Defaults[.popupPosition] = .bottom
+
     panel = FloatingPanel(
       contentRect: NSRect(origin: .zero, size: Defaults[.windowSize]),
       identifier: Bundle.main.bundleIdentifier ?? "org.p0deje.Maccy",
@@ -100,6 +103,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     ) {
       ContentView()
     }
+
+    ActivationHotKeyMonitor.shared.start()
   }
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -154,7 +159,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
     }
 
-    panel.toggle(height: AppState.shared.popup.height, at: .statusItem)
+    panel.toggle(height: AppState.shared.popup.height, at: .bottom)
   }
 
   private func synchronizeMenuIconText() {
@@ -182,6 +187,111 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       if let name = notification.userInfo?["name"] as? KeyboardShortcuts.Name, names.contains(name) {
         KeyboardShortcuts.disable(name)
       }
+    }
+  }
+}
+
+class ActivationHotKeyMonitor {
+  static let shared = ActivationHotKeyMonitor()
+  
+  private var globalMonitor: Any?
+  private var lastModifier: NSEvent.ModifierFlags?
+  private var lastTapTime: Date?
+  private let threshold: TimeInterval = 0.3
+  
+  func start() {
+    guard globalMonitor == nil else { return }
+    
+    // Global monitor catches events when other apps are focused.
+    globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { [weak self] event in
+      self?.handleEvent(event)
+    }
+    
+    // We also need a local monitor for when Maccy itself (like the Settings window) is focused.
+    NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { [weak self] event in
+      self?.handleEvent(event)
+      return event
+    }
+    
+    // Watch for preference changes to sync KeyboardShortcuts
+    Task {
+      for await shortcut in Defaults.updates(.activationShortcut) {
+        if let shortcut = shortcut, case .standard(let s) = shortcut {
+          KeyboardShortcuts.setShortcut(s, for: .popup)
+        }
+      }
+    }
+  }
+  
+  private func handleEvent(_ event: NSEvent) {
+    if event.type == .flagsChanged {
+      handleFlagsChanged(event)
+    } else if event.type == .keyDown {
+      handleKeyDown(event)
+    }
+  }
+
+  private func handleKeyDown(_ event: NSEvent) {
+    // KeyboardShortcuts handles standard shortcuts globally.
+    // We only need to handle them here if they are stored in our custom ActivationShortcut
+    // but weren't registered by KeyboardShortcuts.
+  }
+  
+  private func handleFlagsChanged(_ event: NSEvent) {
+    let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+    
+    checkTrigger(Defaults[.activationShortcut], flags: flags) {
+      AppState.shared.appDelegate?.panel.toggle(height: AppState.shared.popup.height, at: .bottom)
+    }
+    
+    checkTrigger(Defaults[.pinShortcut], flags: flags) {
+      DispatchQueue.main.async {
+        if let item = AppState.shared.history.selectedItem {
+          AppState.shared.history.togglePin(item)
+        }
+      }
+    }
+    
+    checkTrigger(Defaults[.deleteShortcut], flags: flags) {
+      DispatchQueue.main.async {
+        if let item = AppState.shared.history.selectedItem {
+          AppState.shared.history.delete(item)
+          AppState.shared.highlightNext()
+        }
+      }
+    }
+  }
+
+  private func checkTrigger(_ shortcut: ActivationShortcut?, flags: NSEvent.ModifierFlags, action: @escaping () -> Void) {
+    guard let shortcut = shortcut else { return }
+    
+    switch shortcut {
+    case .doubleTap(let raw):
+      let targetFlag = NSEvent.ModifierFlags(rawValue: raw)
+      if flags == targetFlag {
+        let now = Date()
+        if let last = lastModifier, last == flags, let lastTime = lastTapTime, now.timeIntervalSince(lastTime) < threshold {
+          action()
+          lastModifier = nil
+          lastTapTime = nil
+        } else {
+          lastModifier = flags
+          lastTapTime = now
+        }
+      } else if flags.isEmpty {
+        // Ignored release
+      } else {
+        lastModifier = nil
+      }
+      
+    case .chord(let raw):
+      let targetFlag = NSEvent.ModifierFlags(rawValue: raw)
+      if flags == targetFlag {
+         action()
+      }
+      
+    case .standard:
+      break // Handled by KeyboardShortcuts or keyDown
     }
   }
 }

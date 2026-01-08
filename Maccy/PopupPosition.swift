@@ -8,6 +8,7 @@ enum PopupPosition: String, CaseIterable, Identifiable, CustomStringConvertible,
   case window
   case center
   case lastPosition
+  case bottom
 
   var id: Self { self }
 
@@ -23,6 +24,8 @@ enum PopupPosition: String, CaseIterable, Identifiable, CustomStringConvertible,
       return NSLocalizedString("PopupAtScreenCenter", tableName: "AppearanceSettings", comment: "")
     case .lastPosition:
       return NSLocalizedString("PopupAtLastPosition", tableName: "AppearanceSettings", comment: "")
+    case .bottom:
+      return "Bottom"
     }
   }
 
@@ -57,6 +60,10 @@ enum PopupPosition: String, CaseIterable, Identifiable, CustomStringConvertible,
         let anchorY = frame.minY + frame.height * relativePos.y
         // Anchor is top middle of frame
         return NSPoint(x: anchorX - size.width / 2, y: anchorY - size.height)
+      }
+    case .bottom:
+      if let frame = NSScreen.forPopup?.visibleFrame {
+        return NSPoint(x: frame.minX, y: frame.minY)
       }
     default:
       break

@@ -28,6 +28,17 @@ struct KeyShortcut: Identifiable {
     return "\(modifierFlags.description)\(character.capitalized)"
   }
 
+  var character: String {
+    guard let key, let character = Sauce.shared.currentASCIICapableCharacter(
+      for: Int(Sauce.shared.keyCode(for: key)),
+      cocoaModifiers: []
+    ) else {
+      return ""
+    }
+
+    return character.capitalized
+  }
+
   func isVisible(_ all: [KeyShortcut], _ pressedModifierFlags: NSEvent.ModifierFlags) -> Bool {
     if all.count == 1 {
       return true
