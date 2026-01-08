@@ -111,30 +111,32 @@ class Clipboard {
   // Based on https://github.com/Clipy/Clipy/blob/develop/Clipy/Sources/Services/PasteService.swift.
   func paste() {
     Accessibility.check()
+    
+    // Explicitly hide Maccy to return focus to the previous application immediately
+    NSApp.hide(nil)
 
-    // Add flag that left/right modifier key has been pressed.
-    // See https://github.com/TermiT/Flycut/pull/18 for details.
-    let cmdFlag = CGEventFlags(rawValue: UInt64(KeyChord.pasteKeyModifiers.rawValue) | 0x000008)
-    var vCode = Sauce.shared.keyCode(for: KeyChord.pasteKey)
+    // Add a slightly larger delay to ensure the target application has fully regained focus
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+      // Add flag that left/right modifier key has been pressed.
+      let cmdFlag = CGEventFlags(rawValue: UInt64(KeyChord.pasteKeyModifiers.rawValue) | 0x000008)
+      var vCode = Sauce.shared.keyCode(for: KeyChord.pasteKey)
 
-    // Force QWERTY keycode when keyboard layout switches to
-    // QWERTY upon pressing ⌘ key (e.g. "Dvorak - QWERTY ⌘").
-    // See https://github.com/p0deje/Maccy/issues/482 for details.
-    if KeyboardLayout.current.commandSwitchesToQWERTY && cmdFlag.contains(.maskCommand) {
-      vCode = KeyChord.pasteKey.QWERTYKeyCode
+      if KeyboardLayout.current.commandSwitchesToQWERTY && cmdFlag.contains(.maskCommand) {
+        vCode = KeyChord.pasteKey.QWERTYKeyCode
+      }
+
+      let source = CGEventSource(stateID: .combinedSessionState)
+      source?.setLocalEventsFilterDuringSuppressionState([.permitLocalMouseEvents, .permitSystemDefinedEvents],
+                                                         state: .eventSuppressionStateSuppressionInterval)
+
+      let keyVDown = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: true)
+      let keyVUp = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: false)
+      keyVDown?.flags = cmdFlag
+      keyVUp?.flags = cmdFlag
+      
+      keyVDown?.post(tap: .cgSessionEventTap)
+      keyVUp?.post(tap: .cgSessionEventTap)
     }
-
-    let source = CGEventSource(stateID: .combinedSessionState)
-    // Disable local keyboard events while pasting
-    source?.setLocalEventsFilterDuringSuppressionState([.permitLocalMouseEvents, .permitSystemDefinedEvents],
-                                                       state: .eventSuppressionStateSuppressionInterval)
-
-    let keyVDown = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: true)
-    let keyVUp = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: false)
-    keyVDown?.flags = cmdFlag
-    keyVUp?.flags = cmdFlag
-    keyVDown?.post(tap: .cgSessionEventTap)
-    keyVUp?.post(tap: .cgSessionEventTap)
   }
 
   func clear() {

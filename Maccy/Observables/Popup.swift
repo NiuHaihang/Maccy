@@ -37,15 +37,22 @@ class Popup {
   }
 
   static var cardSize: CGFloat {
-    guard let screen = NSScreen.main?.visibleFrame else { return 160 }
-    let spacing: CGFloat = 15
-    // (TotalWidth - gaps) / items
-    return (screen.width - (spacing * 6)) / 6.5
+    let screen = NSScreen.forPopup?.visibleFrame ?? NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+    return (screen.width - 110) / 6.5
   }
 
-  static var bottomPanelHeight: CGFloat {
-    // Card height + Header (50) + bottom padding (around 10) + card v-padding (16)
-    return cardSize + 86
+  var cardSize: CGFloat = Popup.cardSize
+  var bottomPanelHeight: CGFloat { cardSize + 86 }
+
+  func updateLayout() {
+    // Determine the screen where the popup is about to appear
+    let sourceScreen = NSScreen.forPopup ?? NSScreen.main ?? NSScreen.screens.first
+    guard let screen = sourceScreen?.visibleFrame else { return }
+    
+    let spacing: CGFloat = 15
+    let padding: CGFloat = 10 
+    // Card size to fit exactly 6.5 cards
+    self.cardSize = (screen.width - (spacing * 6) - (padding * 2)) / 6.5
   }
 
   var needsResize = false
@@ -83,6 +90,7 @@ class Popup {
   }
 
   func open(height: CGFloat, at popupPosition: PopupPosition = Defaults[.popupPosition]) {
+    updateLayout()
     AppState.shared.appDelegate?.panel.open(height: height, at: popupPosition)
   }
 
@@ -100,12 +108,14 @@ class Popup {
   }
 
   func resize(height: CGFloat) {
+    updateLayout()
     self.height = height + headerHeight + pinnedItemsHeight + footerHeight + (Popup.verticalPadding * 2)
     AppState.shared.appDelegate?.panel.verticallyResize(to: self.height)
     needsResize = false
   }
 
   private func handleFirstKeyDown() {
+    updateLayout()
     if isClosed() {
       open(height: height)
       state = .opening

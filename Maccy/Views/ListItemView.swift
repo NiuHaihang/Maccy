@@ -122,7 +122,7 @@ struct ListItemView<Title: View>: View {
         .frame(height: 25)
         .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
       }
-      .frame(width: Popup.cardSize, height: Popup.cardSize)
+      .frame(width: appState.popup.cardSize, height: appState.popup.cardSize)
       .background(Color(NSColor.windowBackgroundColor))
       .clipShape(.rect(cornerRadius: 16))
       .overlay(
@@ -136,6 +136,31 @@ struct ListItemView<Title: View>: View {
           } else {
             appState.hoverSelectionWhileKeyboardNavigating = id
           }
+        }
+      }
+      .contextMenu {
+        Button {
+          if let item = appState.history.all.first(where: { $0.id == id }) {
+            appState.history.togglePin(item)
+          }
+        } label: {
+          Label(accessoryImage == nil ? "Pin" : "Unpin", systemImage: accessoryImage == nil ? "pin" : "pin.slash")
+        }
+        
+        Button(role: .destructive) {
+          if let item = appState.history.all.first(where: { $0.id == id }) {
+            appState.history.delete(item)
+          }
+        } label: {
+          Label("Delete", systemImage: "trash")
+        }
+        
+        Divider()
+        
+        Button {
+          NSApp.terminate(nil)
+        } label: {
+          Label("quit", systemImage: "power")
         }
       }
     } else {
@@ -187,7 +212,7 @@ struct ListItemView<Title: View>: View {
             .frame(width: 50)
         }
       }
-      .frame(height: Popup.cardSize)
+      .frame(height: appState.popup.cardSize)
       .id(id)
       .frame(maxWidth: .infinity, alignment: .leading)
       .foregroundStyle(isSelected ? Color.white : .primary)
@@ -205,6 +230,31 @@ struct ListItemView<Title: View>: View {
         }
       }
       .help(help ?? "")
+      .contextMenu {
+        Button {
+          if let item = appState.history.all.first(where: { $0.id == id }) {
+            appState.history.togglePin(item)
+          }
+        } label: {
+          Label(accessoryImage == nil ? "Pin" : "Unpin", systemImage: "pin")
+        }
+        
+        Button(role: .destructive) {
+          if let item = appState.history.all.first(where: { $0.id == id }) {
+            appState.history.delete(item)
+          }
+        } label: {
+          Label("Delete", systemImage: "trash")
+        }
+        
+        Divider()
+        
+        Button {
+          NSApp.terminate(nil)
+        } label: {
+          Label("Quit", systemImage: "power")
+        }
+      }
     }
   }
 }

@@ -4,8 +4,9 @@ struct Accessibility {
   private static var allowed: Bool { AXIsProcessTrustedWithOptions(nil) }
 
   static func check() {
-    guard !allowed else {
-      return
+    if !allowed {
+      let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+      AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
   }
 }

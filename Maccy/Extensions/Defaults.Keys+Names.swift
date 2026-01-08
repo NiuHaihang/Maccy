@@ -73,7 +73,7 @@ extension Defaults.Keys {
   static let menuIcon = Key<MenuIcon>("menuIcon", default: .maccy)
   static let migrations = Key<[String: Bool]>("migrations", default: [:])
   static let numberOfUsages = Key<Int>("numberOfUsages", default: 0)
-  static let pasteByDefault = Key<Bool>("pasteByDefault", default: false)
+  static let pasteByDefault = Key<Bool>("pasteByDefault", default: true)
   static let pinTo = Key<PinsPosition>("pinTo", default: .top)
   static let popupPosition = Key<PopupPosition>("popupPosition", default: .bottom)
   static let popupScreen = Key<Int>("popupScreen", default: 0)

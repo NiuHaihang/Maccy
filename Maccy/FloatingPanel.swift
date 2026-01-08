@@ -75,7 +75,7 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     var size = Defaults[.windowSize]
     if popupPosition == .bottom {
       if let screen = NSScreen.forPopup?.visibleFrame {
-        size = NSSize(width: screen.width, height: Popup.bottomPanelHeight)
+        size = NSSize(width: screen.width, height: AppState.shared.popup.bottomPanelHeight)
       }
     } else {
       size.height = min(height, Defaults[.windowSize].height)
