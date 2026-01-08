@@ -25,6 +25,7 @@ struct HistoryItemView: View {
     .onAppear {
       item.ensureThumbnailImage()
     }
+    .contentShape(Rectangle())
     .onTapGesture {
       appState.history.select(item)
     }

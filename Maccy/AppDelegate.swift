@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     statusItem.button?.image = Defaults[.menuIcon].image
     statusItem.button?.imagePosition = .imageLeft
     statusItem.button?.target = self
+    statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
     return statusItem
   }()
 
@@ -144,22 +145,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   @objc
+  @MainActor
   private func performStatusItemClick() {
-    if let event = NSApp.currentEvent {
-      let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+    guard let event = NSApp.currentEvent else { return }
 
-      if modifierFlags.contains(.option) {
-        Defaults[.ignoreEvents].toggle()
+    if event.type == .rightMouseUp {
+      let menu = NSMenu()
+      menu.addItem(NSMenuItem(title: NSLocalizedString("preferences", comment: ""), action: #selector(openPreferences), keyEquivalent: ","))
+      menu.addItem(NSMenuItem.separator())
+      menu.addItem(NSMenuItem(title: NSLocalizedString("quit", comment: ""), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+      
+      statusItem.menu = menu
+      statusItem.button?.performClick(nil)
+      statusItem.menu = nil
+      return
+    }
 
-        if modifierFlags.contains(.shift) {
-          Defaults[.ignoreOnlyNextEvent] = Defaults[.ignoreEvents]
-        }
+    let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
-        return
+    if modifierFlags.contains(.option) {
+      Defaults[.ignoreEvents].toggle()
+
+      if modifierFlags.contains(.shift) {
+        Defaults[.ignoreOnlyNextEvent] = Defaults[.ignoreEvents]
       }
+
+      return
     }
 
     panel.toggle(height: AppState.shared.popup.height, at: .bottom)
+  }
+
+  @objc @MainActor private func openPreferences() {
+    AppState.shared.openPreferences()
   }
 
   private func synchronizeMenuIconText() {

@@ -15,6 +15,28 @@ struct ContentView: View {
         GlassEffectView()
       } else {
         VisualEffectView()
+          .overlay(
+             Defaults[.popupPosition] == .bottom ? 
+             Color(NSColor.windowBackgroundColor).opacity(0.4) : nil
+          )
+      }
+      
+      // Solid-ish background fill for the entire panel
+      Color(NSColor.windowBackgroundColor)
+        .opacity(Defaults[.popupPosition] == .bottom ? 0.7 : 0)
+        .ignoresSafeArea()
+      
+      // Top accent line for the panel
+      if Defaults[.popupPosition] == .bottom {
+        VStack {
+          LinearGradient(
+            colors: [.accentColor.opacity(0.2), .clear],
+            startPoint: .top,
+            endPoint: .bottom
+          )
+          .frame(height: 80)
+          Spacer()
+        }
       }
 
       VStack(alignment: .leading, spacing: 0) {
@@ -25,6 +47,7 @@ struct ContentView: View {
                 searchFocused: $searchFocused,
                 searchQuery: $appState.history.searchQuery
               )
+              .background(Color.primary.opacity(0.05))
 
               HistoryListView(
                 searchQuery: $appState.history.searchQuery,
@@ -52,6 +75,8 @@ struct ContentView: View {
       .padding(.horizontal, Defaults[.popupPosition] == .bottom ? 0 : Popup.horizontalPadding)
       .onAppear {
         searchFocused = true
+        // Force the layout to update immediately on appear
+        appState.popup.updateLayout()
       }
       .onMouseMove {
         appState.isKeyboardNavigating = false

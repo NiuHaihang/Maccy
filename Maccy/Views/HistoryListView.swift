@@ -44,7 +44,7 @@ struct HistoryListView: View {
           }
         }
       }
-      .frame(height: Popup.cardSize + 16)
+      .frame(height: appState.popup.cardSize + 16)
       .onAppear {
         Task {
           appState.isKeyboardNavigating = true
