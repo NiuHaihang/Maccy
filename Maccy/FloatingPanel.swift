@@ -72,8 +72,17 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
   }
 
   func open(height: CGFloat, at popupPosition: PopupPosition = Defaults[.popupPosition]) {
-    setContentSize(NSSize(width: frame.width, height: min(height, Defaults[.windowSize].height)))
-    setFrameOrigin(popupPosition.origin(size: frame.size, statusBarButton: statusBarButton))
+    var size = Defaults[.windowSize]
+    if popupPosition == .bottom {
+      if let screen = NSScreen.forPopup?.visibleFrame {
+        size = NSSize(width: screen.width, height: Popup.bottomPanelHeight)
+      }
+    } else {
+      size.height = min(height, Defaults[.windowSize].height)
+    }
+
+    setContentSize(size)
+    setFrameOrigin(popupPosition.origin(size: size, statusBarButton: statusBarButton))
     orderFrontRegardless()
     makeKey()
     isPresented = true
@@ -86,6 +95,10 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
   }
 
   func verticallyResize(to newHeight: CGFloat) {
+    if Defaults[.popupPosition] == .bottom {
+      return
+    }
+
     var newSize = Defaults[.windowSize]
     newSize.height = min(newHeight, newSize.height)
 

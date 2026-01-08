@@ -36,6 +36,18 @@ class Popup {
     22
   }
 
+  static var cardSize: CGFloat {
+    guard let screen = NSScreen.main?.visibleFrame else { return 160 }
+    let spacing: CGFloat = 15
+    // (TotalWidth - gaps) / items
+    return (screen.width - (spacing * 6)) / 6.5
+  }
+
+  static var bottomPanelHeight: CGFloat {
+    // Card height + Header (50) + bottom padding (around 10) + card v-padding (16)
+    return cardSize + 86
+  }
+
   var needsResize = false
   var height: CGFloat = 0
   var headerHeight: CGFloat = 0

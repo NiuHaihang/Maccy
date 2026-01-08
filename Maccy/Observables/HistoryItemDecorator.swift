@@ -151,7 +151,7 @@ class HistoryItemDecorator: Identifiable, Hashable {
       return
     }
 
-    var attributedString = AttributedString(title.shortened(to: 500))
+    var attributedString = AttributedString(text.shortened(to: 500))
     for range in ranges {
       if let lowerBound = AttributedString.Index(range.lowerBound, within: attributedString),
          let upperBound = AttributedString.Index(range.upperBound, within: attributedString) {
@@ -180,6 +180,35 @@ class HistoryItemDecorator: Identifiable, Hashable {
       let pin = HistoryItem.randomAvailablePin
       item.pin = pin
     }
+  }
+
+  var timeAgo: String {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.unitsStyle = .abbreviated
+    return formatter.localizedString(for: item.firstCopiedAt, relativeTo: Date.now)
+  }
+
+  var contentTypeLabel: String {
+    if item.image != nil { return "Image" }
+    if item.fileURLs.count > 0 { return "File" }
+    if item.rtfData != nil { return "RTF" }
+    if item.htmlData != nil { return "HTML" }
+    return "Text"
+  }
+
+  var statsLabel: String {
+    if let image = item.image {
+      let bcf = ByteCountFormatter()
+      bcf.allowedUnits = [.useAll]
+      bcf.countStyle = .file
+      return bcf.string(fromByteCount: Int64(item.image?.tiffRepresentation?.count ?? 0))
+    }
+    
+    if item.fileURLs.count > 0 {
+      return "\(item.fileURLs.count) files"
+    }
+
+    return "\(text.count) chars"
   }
 
   private func synchronizeItemPin() {

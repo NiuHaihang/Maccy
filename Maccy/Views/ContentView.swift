@@ -1,3 +1,4 @@
+import Defaults
 import SwiftData
 import SwiftUI
 
@@ -18,23 +19,37 @@ struct ContentView: View {
 
       VStack(alignment: .leading, spacing: 0) {
         KeyHandlingView(searchQuery: $appState.history.searchQuery, searchFocused: $searchFocused) {
-          HeaderView(
-            searchFocused: $searchFocused,
-            searchQuery: $appState.history.searchQuery
-          )
+          if Defaults[.popupPosition] == .bottom {
+            VStack(alignment: .leading, spacing: 0) {
+              HeaderView(
+                searchFocused: $searchFocused,
+                searchQuery: $appState.history.searchQuery
+              )
 
-          HistoryListView(
-            searchQuery: $appState.history.searchQuery,
-            searchFocused: $searchFocused
-          )
+              HistoryListView(
+                searchQuery: $appState.history.searchQuery,
+                searchFocused: $searchFocused
+              )
+            }
+          } else {
+            HeaderView(
+              searchFocused: $searchFocused,
+              searchQuery: $appState.history.searchQuery
+            )
 
-          FooterView(footer: appState.footer)
+            HistoryListView(
+              searchQuery: $appState.history.searchQuery,
+              searchFocused: $searchFocused
+            )
+
+            FooterView(footer: appState.footer)
+          }
         }
       }
       .animation(.default.speed(3), value: appState.history.items)
       .animation(.easeInOut(duration: 0.2), value: appState.searchVisible)
-      .padding(.vertical, Popup.verticalPadding)
-      .padding(.horizontal, Popup.horizontalPadding)
+      .padding(.vertical, Defaults[.popupPosition] == .bottom ? 0 : Popup.verticalPadding)
+      .padding(.horizontal, Defaults[.popupPosition] == .bottom ? 0 : Popup.horizontalPadding)
       .onAppear {
         searchFocused = true
       }

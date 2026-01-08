@@ -10,10 +10,33 @@ import SwiftData
 
 @Observable
 class History { // swiftlint:disable:this type_body_length
+  enum Filter: String, CaseIterable {
+    case all
+    case text
+    case images
+    case files
+    case pinned
+
+    var description: String {
+      switch self {
+      case .all: return "全部"
+      case .text: return "文本"
+      case .images: return "照片"
+      case .files: return "文件"
+      case .pinned: return "收藏"
+      }
+    }
+  }
+
   static let shared = History()
   let logger = Logger(label: "org.p0deje.Maccy")
 
   var items: [HistoryItemDecorator] = []
+  var filter: Filter = .all {
+    didSet {
+      updateFilteredItems()
+    }
+  }
   var selectedItem: HistoryItemDecorator? {
     willSet {
       selectedItem?.isSelected = false
@@ -379,15 +402,39 @@ class History { // swiftlint:disable:this type_body_length
     return nil
   }
 
-  private func updateItems(_ newItems: [Search.SearchResult]) {
-    items = newItems.map { result in
-      let item = result.object
-      item.highlight(searchQuery, result.ranges)
+  func updateFilteredItems() {
+    throttler.throttle { [self] in
+      let base = searchQuery.isEmpty ? all : search.search(string: searchQuery, within: all).map(\.object)
+      items = base.filter { decorator in
+        switch filter {
+        case .all: return true
+        case .text: return decorator.item.image == nil && decorator.item.fileURLs.isEmpty
+        case .images: return decorator.item.image != nil
+        case .files: return !decorator.item.fileURLs.isEmpty
+        case .pinned: return decorator.isPinned
+        }
+      }
 
-      return item
+      if !searchQuery.isEmpty {
+        let searchResults = search.search(string: searchQuery, within: all)
+        for result in searchResults {
+          result.object.highlight(searchQuery, result.ranges)
+        }
+      }
+
+      if items.isEmpty {
+        AppState.shared.selection = nil
+      } else {
+        AppState.shared.selection = items.first?.id
+      }
+      
+      updateUnpinnedShortcuts()
+      AppState.shared.popup.needsResize = true
     }
+  }
 
-    updateUnpinnedShortcuts()
+  private func updateItems(_ newItems: [Search.SearchResult]) {
+    updateFilteredItems()
   }
 
   private func updateShortcuts() {

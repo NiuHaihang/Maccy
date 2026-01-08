@@ -28,3 +28,4 @@
 "system_settings_pane" = "Privacy & Security settings";
 "system_preferences_name" = "System Preferences";
 "system_preferences_pane" = "Security & Privacy preferences";
+"DoubleTapTooltip" = "Or open by double-tapping a modifier key.";
