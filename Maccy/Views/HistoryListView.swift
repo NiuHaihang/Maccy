@@ -27,7 +27,7 @@ struct HistoryListView: View {
       ScrollView(.horizontal) {
         ScrollViewReader { proxy in
           LazyHStack(spacing: 15) {
-            ForEach(unpinnedItems) { item in
+            ForEach(appState.history.items.filter(\.isVisible)) { item in
               HistoryItemView(item: item)
             }
           }
